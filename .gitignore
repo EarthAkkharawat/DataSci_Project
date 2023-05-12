@@ -132,6 +132,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-.png
+*.png
 
-.jpg
+*.jpg
+
+*.jpeg
+
+images?q=*

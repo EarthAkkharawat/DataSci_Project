@@ -34,7 +34,6 @@ def fetch_data_from_traffyapi(ti):
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     formatted_date = yesterday.strftime("%Y-%m-%d")
-    formatted_date = "2023-04-29"
     url = "https://publicapi.traffy.in.th/share/teamchadchart/search?start=" + \
         formatted_date+"&end="+formatted_date+"&sort=ASC"
     response = requests.get(url)

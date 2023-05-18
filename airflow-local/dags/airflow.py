@@ -32,7 +32,7 @@ def fetch_data_from_traffyapi(ti):
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     formatted_date = yesterday.strftime("%Y-%m-%d")
-
+    formatted_date = "2023-05-10"
     url = "https://publicapi.traffy.in.th/share/teamchadchart/search?start=" + \
         formatted_date+"&end="+formatted_date+"&sort=ASC"
     response = requests.get(url)
@@ -66,7 +66,7 @@ def feed_data_to_model(ti):
         key='traffyapi_data', task_ids='fetch_data')
     prediction_list = []
 
-    for i, item in enumerate(payload[:50]):
+    for i, item in enumerate(payload):
         urllib.request.urlretrieve(item['photo_url'], f"image{i}.jpg")
         inputImage = Image.open(f'image{i}.jpg')
         inputImage = inputImage.resize((224, 224))
@@ -95,7 +95,6 @@ def send_prediction_to_vis(ti):
     payload = ti.xcom_pull(
         key='traffyapi_data', task_ids='fetch_data')
     ti.xcom_push(key='vis0', value=len(payload))
-    payload = payload[:50]
     for i in range(len(payload)):
         for j in range(10):
             payload[i][str(j)] = model_prediction[i][j]
@@ -115,15 +114,15 @@ def send_prediction_to_vis(ti):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2023, 5, 16),
+    'start_date': datetime(2023, 5, 1),
     'retries': 1,
-    'retry_delay': timedelta(minutes=60)
+    'retry_delay': timedelta(minutes=5)
 }
 
 dag = DAG('TraffyfonduePredictionPipeline',
           description='A DAG to fetch data from the Traffy API, then predict (multi-label) image classes and POST via API to visualize the results using PowerBI',
           default_args=default_args,
-          schedule_interval='@hourly',
+          schedule_interval='@daily',
           catchup=False)
 
 fetch_task = PythonOperator(

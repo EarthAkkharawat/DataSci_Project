@@ -19,7 +19,9 @@ from pathlib import Path
 import onnxruntime as rt
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent
-
+headers = {
+    'Content-Type': 'application/json'  # Replace with the correct content type
+}
 
 @provide_session
 def cleanup_xcom(session=None, **context):
@@ -32,7 +34,7 @@ def fetch_data_from_traffyapi(ti):
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     formatted_date = yesterday.strftime("%Y-%m-%d")
-    formatted_date = "2023-05-10"
+    formatted_date = "2023-04-29"
     url = "https://publicapi.traffy.in.th/share/teamchadchart/search?start=" + \
         formatted_date+"&end="+formatted_date+"&sort=ASC"
     response = requests.get(url)
@@ -66,26 +68,13 @@ def feed_data_to_model(ti):
         key='traffyapi_data', task_ids='fetch_data')
     prediction_list = []
 
-    for i, item in enumerate(payload):
-        urllib.request.urlretrieve(item['photo_url'], f"image{i}.jpg")
-        inputImage = Image.open(f'image{i}.jpg')
-        inputImage = inputImage.resize((224, 224))
-        inputImage = np.array(inputImage.convert('RGB'))
+    for item in payload:
+        payload = {
+            "url":item['photo_url']
+        }
+        response = requests.post("https://tofu-api-nj2eo5v2pq-as.a.run.app", json=payload, headers=headers)
+        prediction_list.append(response.json()['prediction'])
 
-        inputTensor = ((inputImage / 255) -
-                       [0.4303, 0.4301, 0.4139]) / [0.2186, 0.2140, 0.2205]
-        inputTensor = inputTensor.transpose(
-            2, 0, 1)[np.newaxis].astype(np.float32)
-        sessOptions = rt.SessionOptions()
-        sessOptions.graph_optimization_level = rt.GraphOptimizationLevel.ORT_ENABLE_ALL
-        model = rt.InferenceSession(os.path.join(
-            BASE_DIR, "model.onnx"), sessOptions)
-
-        def thresholding_lambda(x): return 1 if x > 0.5 else 0
-
-        output = model.run([], {'input': inputTensor})[0]
-        output = np.vectorize(thresholding_lambda)(output)
-        prediction_list.append(output[0].tolist())
     ti.xcom_push(key='model_prediction', value=prediction_list)
 
 

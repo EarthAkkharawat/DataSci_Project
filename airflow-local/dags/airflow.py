@@ -5,22 +5,13 @@ from airflow.models import DagRun, TaskInstance, XCom
 from airflow import settings
 from airflow.utils.db import provide_session
 from sqlalchemy.orm.session import make_transient
-
-from PIL import Image
 import numpy as np
-import os
-
-import onnxruntime as rt
-
-import urllib.request
 import requests
 from pathlib import Path
 
-import onnxruntime as rt
-
 BASE_DIR = Path(__file__).resolve(strict=True).parent
 headers = {
-    'Content-Type': 'application/json'  # Replace with the correct content type
+    'Content-Type': 'application/json' 
 }
 
 @provide_session
@@ -63,17 +54,28 @@ def fetch_data_from_traffyapi(ti):
 
 
 def feed_data_to_model(ti):
-    payload = ti.xcom_pull(
+    data = ti.xcom_pull(
         key='traffyapi_data', task_ids='fetch_data')
     prediction_list = []
-
-    for item in payload:
+    error_list = []
+    i=0
+    for i,item in enumerate(data):
+        if item['photo_url'].split("/")[-1].split(".")[0][:-1] == 'corruption_photo':
+            error_list.append(i)
+            continue
+        
         payload = {
             "url":item['photo_url']
         }
-        response = requests.post("https://tofu-api-nj2eo5v2pq-as.a.run.app", json=payload, headers=headers)
-        prediction_list.append(response.json()['prediction'])
 
+        response = requests.post("https://tofu-api-nj2eo5v2pq-as.a.run.app", json=payload, headers=headers)
+        if response.status_code != 200 or 'prediction' not in response.json():
+            error_list.append(i)
+            continue
+        prediction_list.append(response.json()['prediction'])
+        i+=1
+
+    ti.xcom_push(key='error_images', value=error_list)
     ti.xcom_push(key='model_prediction', value=prediction_list)
 
 
@@ -82,16 +84,23 @@ def send_prediction_to_vis(ti):
         key='model_prediction', task_ids='feed_data_to_model')
     payload = ti.xcom_pull(
         key='traffyapi_data', task_ids='fetch_data')
-    ti.xcom_push(key='vis0', value=len(payload))
+    
+    error_images = ti.xcom_pull(
+        key='error_images', task_ids='feed_data_to_model')
+    
+    data = []
+    idx = 0
     for i in range(len(payload)):
+        if i in error_images:
+            continue
         for j in range(10):
-            payload[i][str(j)] = model_prediction[i][j]
+            payload[i][str(j)] = model_prediction[idx][j]
+        idx+=1
+        data.append(payload[i])
 
-    ti.xcom_push(key='vis1', value=payload)
-
-    if payload:
+    if data:
         post_url = "https://api.powerbi.com/beta/271d5e7b-1350-4b96-ab84-52dbda4cf40c/datasets/dba5b78e-aaeb-4914-9df3-931a56dcd817/rows?key=Vca7Fx48SMhUmUnO48xZre8GaGC%2FEegcb7Fruc4Coi4IBAVHNYhauufsDpMarYJF5U79I6rE%2BvOYubkZhk1eYg%3D%3D"
-        post_response = requests.post(post_url, json=payload)
+        post_response = requests.post(post_url, json=data)
 
         if post_response.status_code == 200:
             ti.xcom_push(key='status', value="Data posted successfully.")

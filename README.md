@@ -35,6 +35,9 @@ Model REST API: https://tofu-api-nj2eo5v2pq-as.a.run.app
 ### Diagram of the project
 ![alt_text](Project_diagram.png)
 
+### Example of visualization
+![alt_text](Visualization.png)
+
 ## How to run airflow
 1. Open terminal in /airflow-local and run `docker-compose up airflow-init`
 

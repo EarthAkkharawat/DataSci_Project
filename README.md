@@ -9,6 +9,8 @@ Visualization (PowerBI): https://shorturl.at/eIJR4
 
 Model REST API: https://tofu-api-nj2eo5v2pq-as.a.run.app
 
+Made as part of final project in 2110446 Data Science and Data Engineering, semester 2/2022.
+
 ## Details
 ### Data Engineering Part
 - Web scraping: scraped images to enlarge train dataset

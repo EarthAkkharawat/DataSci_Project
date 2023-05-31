@@ -1,7 +1,7 @@
 # TofuFondue Project
 
 ## Overview
-Using API requests to obtain real-time information on problems reported through the [TraffyFondue website](https://www.traffy.in.th/?page_id=4434). From there, we can use ours multilabel classification model to predict images associated with the reported problems. Finally, the results are visualized in a PowerBI dashboard by sending an API.
+Using API to obtain real-time information on problems reported through the [TraffyFondue website](https://www.traffy.in.th/?page_id=4434). From there, using ours multilabel classification model to predict images associated with the reported problems. Finally, the results are visualized in a PowerBI dashboard by sending an API.
 
 Model Deployment sources code: https://github.com/AkiraSitdhi/TofuFondue-API
 
@@ -16,7 +16,7 @@ Model REST API: https://tofu-api-nj2eo5v2pq-as.a.run.app
 - Airflow: use to create project pipeline consisting of 4 tasks
   1. Using api GET request the reported problems in realtime (daily) 
   2. Call the REST API of our deployed model to predict the images obtained from the previous task
-  3. Sending the prediction result and problems infomation to visualize via PowerBI using API POST request
+  3. Sending the prediction result and problems information to visualize via PoweBI streaming dataset
   4. Clear all metadata on airflow XComs database
 
 ### Machine Learning Part
